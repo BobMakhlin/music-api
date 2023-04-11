@@ -18,7 +18,7 @@ namespace Presentation.API.Controllers
         [HttpGet]
         public Task<IEnumerable<Track>> GetTracksAsync()
         {
-            return _musicService.findTracksAsync("Believer");
+            return _musicService.FindTracksAsync("Believer");
         }
     }
 }

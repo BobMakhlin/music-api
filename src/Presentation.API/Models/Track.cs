@@ -1,14 +1,5 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Presentation.API.Models
+﻿namespace Presentation.API.Models
 {
-    public class Track
-    {
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string PreviewUrl { get; set; }
-        public string AlbumImage { get; set; }
-        // duration?
-        // thirdparty url (to spotify)?
-    }
+    public record Track(string Id, string Name, string PreviewUrl, string AlbumImage,
+        Duration Duration, string ExternalUrl);
 }

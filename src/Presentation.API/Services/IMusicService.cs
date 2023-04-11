@@ -4,6 +4,6 @@ namespace Presentation.API.Services
 {
     public interface IMusicService
     {
-        Task<IEnumerable<Track>> findTracksAsync(string name);
+        Task<IEnumerable<Track>> FindTracksAsync(string name);
     }
 }
