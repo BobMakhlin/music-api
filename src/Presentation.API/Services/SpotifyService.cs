@@ -8,10 +8,13 @@ namespace Presentation.API.Services
         private record SpotifyTracksResponse(SpotifyTracks tracks);
         private record SpotifyTracks(IEnumerable<SpotifyTrack> items);
         private record SpotifyTrack(string id, string name, string preview_url,
-            int duration_ms, ExternalUrls external_urls);
-        private record ExternalUrls(string spotify);
+            int duration_ms, SpotifyExternalUrls external_urls, SpotifyAlbum album);
+        private record SpotifyExternalUrls(string spotify);
+        private record SpotifyAlbum(IEnumerable<SpotifyImage> images);
+        private record SpotifyImage(string url, int height, int width);
 
         private const string SpotifySearchUrl = "https://api.spotify.com/v1/search";
+        private const int Small = 64;
 
         public async Task<IEnumerable<Track>> FindTracksAsync(string name)
         {
@@ -27,16 +30,19 @@ namespace Presentation.API.Services
 
         private string GetToken()
         {
-            return "BQBVf1r8iVYxMh3a9yNwICsk5AMHw0W4dS25YrDGrn5IQAs-XKnedntGqr2Dk1j42ygXD7l0roqlnOkukaAfiBVvpk_PSsz6x13aaq09rbV9LuAS12B2";
+            return "[TOKEN]";
         }
 
         private Track SpotifyTrackToTrack(SpotifyTrack spotifyTrack)
         {
+            var albumImage = spotifyTrack.album.images.First(image =>
+                image.height == Small || image.width == Small);
+
             return new Track(
                 spotifyTrack.id,
                 spotifyTrack.name,
                 spotifyTrack.preview_url,
-                null,
+                albumImage.url,
                 null,
                 spotifyTrack.external_urls.spotify
             );
