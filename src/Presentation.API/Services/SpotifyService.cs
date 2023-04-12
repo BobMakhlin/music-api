@@ -13,39 +13,45 @@ namespace Presentation.API.Services
         private record SpotifyImage(string url, int height, int width);
         private record TokenResponse(string access_token, string token_type, int expires_in);
 
+        private const string SearchPath = "search";
+        private const string TokenPath = "token";
         private const int Small = 64;
 
         private readonly IConfiguration _configuration;
+        private readonly HttpClient _spotifyHttpClient;
+        private readonly HttpClient _accountsHttpClient;
 
-        public SpotifyService(IConfiguration configuration)
+        public SpotifyService(IConfiguration configuration,
+            IHttpClientFactory httpClientFactory)
         {
             _configuration = configuration;
+            _spotifyHttpClient = httpClientFactory.CreateClient();
+            _spotifyHttpClient.BaseAddress = new Uri(_configuration["ThirdParty:Spotify:SpotifyApi"]);
+            _accountsHttpClient = httpClientFactory.CreateClient();
+            _accountsHttpClient.BaseAddress = new Uri(_configuration["ThirdParty:Spotify:AccountsApi"]);
         }
 
         public async Task<IEnumerable<Track>> FindTracksAsync(string name)
         {
             var token = await GetTokenAsync();
-            var url = $"{_configuration["ThirdParty:Spotify:SpotifyApi"]}/search?type=track&q=track:\"{name}\"";
+            var url = $"{SearchPath}?type=track&q=track:\"{name}\"";
 
-            using var client = new HttpClient(); // maybe a field?
-            client.DefaultRequestHeaders.Add("Authorization", token);
-            var response = await client.GetFromJsonAsync<SpotifyTracksResponse>(url);
+            _spotifyHttpClient.DefaultRequestHeaders.Add("Authorization", token);
+            var response = await _spotifyHttpClient.GetFromJsonAsync<SpotifyTracksResponse>(url);
 
             return response.tracks.items.Select(SpotifyTrackToTrack);
         }
 
         private async Task<string> GetTokenAsync()
         {
-            using var client = new HttpClient();  // maybe a field?
-
-            var dict = new Dictionary<string, string>
+            var map = new Dictionary<string, string>
             {
                 { "grant_type", "client_credentials" },
                 { "client_id", _configuration["ThirdParty:Spotify:ClientId"] },
                 { "client_secret", _configuration["ThirdParty:Spotify:ClientSecret"]}
             };
 
-            var response = await client.PostAsync($"{_configuration["ThirdParty:Spotify:AccountsApi"]}/token", new FormUrlEncodedContent(dict));
+            var response = await _accountsHttpClient.PostAsync($"{TokenPath}", new FormUrlEncodedContent(map));
             var content = await response.Content.ReadFromJsonAsync<TokenResponse>();
 
             // TODO: caching.
@@ -70,6 +76,3 @@ namespace Presentation.API.Services
         }
     }
 }
-
-// https://learn.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-7.0
-
