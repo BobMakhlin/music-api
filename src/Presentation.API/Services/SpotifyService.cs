@@ -11,31 +11,52 @@ namespace Presentation.API.Services
         private record SpotifyExternalUrls(string spotify);
         private record SpotifyAlbum(IEnumerable<SpotifyImage> images);
         private record SpotifyImage(string url, int height, int width);
+        private record TokenResponse(string access_token, string token_type, int expires_in);
 
-        private const string SpotifySearchUrl = "https://api.spotify.com/v1/search";
         private const int Small = 64;
+
+        private readonly IConfiguration _configuration;
+
+        public SpotifyService(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
         public async Task<IEnumerable<Track>> FindTracksAsync(string name)
         {
-            var token = GetToken();
-            var url = $"{SpotifySearchUrl}?type=track&q=track:\"{name}\"";
+            var token = await GetTokenAsync();
+            var url = $"{_configuration["ThirdParty:Spotify:SpotifyApi"]}/search?type=track&q=track:\"{name}\"";
 
-            using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
+            using var client = new HttpClient(); // maybe a field?
+            client.DefaultRequestHeaders.Add("Authorization", token);
             var response = await client.GetFromJsonAsync<SpotifyTracksResponse>(url);
 
             return response.tracks.items.Select(SpotifyTrackToTrack);
         }
 
-        private string GetToken()
+        private async Task<string> GetTokenAsync()
         {
-            return "[TOKEN]";
+            using var client = new HttpClient();  // maybe a field?
+
+            var dict = new Dictionary<string, string>
+            {
+                { "grant_type", "client_credentials" },
+                { "client_id", _configuration["ThirdParty:Spotify:ClientId"] },
+                { "client_secret", _configuration["ThirdParty:Spotify:ClientSecret"]}
+            };
+
+            var response = await client.PostAsync($"{_configuration["ThirdParty:Spotify:AccountsApi"]}/token", new FormUrlEncodedContent(dict));
+            var content = await response.Content.ReadFromJsonAsync<TokenResponse>();
+
+            // TODO: caching.
+
+            return $"Bearer {content.access_token}";
         }
 
         private Track SpotifyTrackToTrack(SpotifyTrack spotifyTrack)
         {
             var albumImage = spotifyTrack.album.images.First(image =>
-                image.height == Small || image.width == Small);
+                image.height == Small && image.width == Small);
             var duration = TimeSpan.FromMilliseconds(spotifyTrack.duration_ms);
 
             return new Track(
@@ -49,3 +70,6 @@ namespace Presentation.API.Services
         }
     }
 }
+
+// https://learn.microsoft.com/en-us/aspnet/core/fundamentals/http-requests?view=aspnetcore-7.0
+
