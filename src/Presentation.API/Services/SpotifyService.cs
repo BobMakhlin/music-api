@@ -1,5 +1,4 @@
 ﻿using Presentation.API.Models;
-using System.Text.Json.Serialization;
 
 namespace Presentation.API.Services
 {
@@ -37,13 +36,14 @@ namespace Presentation.API.Services
         {
             var albumImage = spotifyTrack.album.images.First(image =>
                 image.height == Small || image.width == Small);
+            var duration = TimeSpan.FromMilliseconds(spotifyTrack.duration_ms);
 
             return new Track(
                 spotifyTrack.id,
                 spotifyTrack.name,
                 spotifyTrack.preview_url,
                 albumImage.url,
-                null,
+                duration,
                 spotifyTrack.external_urls.spotify
             );
         }
