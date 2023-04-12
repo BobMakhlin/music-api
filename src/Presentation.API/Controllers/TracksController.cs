@@ -16,9 +16,9 @@ namespace Presentation.API.Controllers
         }
 
         [HttpGet]
-        public Task<IEnumerable<Track>> GetTracksAsync()
+        public Task<IEnumerable<Track>> GetTracksAsync([FromQuery] string name)
         {
-            return _musicService.FindTracksAsync("Believer");
+            return _musicService.FindTracksAsync(name);
         }
     }
 }
