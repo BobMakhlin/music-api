@@ -18,6 +18,7 @@ namespace Presentation.API.Services
         private const string TokenPath = "token";
         private const int Small = 64;
         private const string AccessTokenCacheKey = "spotifyAccessToken";
+        private const int AccessTokenCorrelationMinutes = 5;
 
         private readonly IConfiguration _configuration;
         private readonly HttpClient _spotifyHttpClient;
@@ -62,8 +63,8 @@ namespace Presentation.API.Services
                 var response = await _accountsHttpClient.PostAsync($"{TokenPath}", new FormUrlEncodedContent(map));
                 var content = await response.Content.ReadFromJsonAsync<TokenResponse>();
 
-                // TODO: the absolute expiration should not be hardcoded.
-                _cache.Set(AccessTokenCacheKey, content.access_token, TimeSpan.FromMinutes(1));
+                var absoluteExpiration = TimeSpan.FromSeconds(content.expires_in - AccessTokenCorrelationMinutes);
+                _cache.Set(AccessTokenCacheKey, content.access_token, absoluteExpiration);
                 token = content.access_token;
             }
 
