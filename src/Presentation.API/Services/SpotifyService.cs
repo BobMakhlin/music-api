@@ -1,4 +1,5 @@
-﻿using Presentation.API.Models;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Presentation.API.Models;
 
 namespace Presentation.API.Services
 {
@@ -16,15 +17,19 @@ namespace Presentation.API.Services
         private const string SearchPath = "search";
         private const string TokenPath = "token";
         private const int Small = 64;
+        private const string AccessTokenCacheKey = "spotifyAccessToken";
 
         private readonly IConfiguration _configuration;
         private readonly HttpClient _spotifyHttpClient;
         private readonly HttpClient _accountsHttpClient;
+        private readonly IMemoryCache _cache;
 
         public SpotifyService(IConfiguration configuration,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            IMemoryCache cache)
         {
             _configuration = configuration;
+            _cache = cache;
             _spotifyHttpClient = httpClientFactory.CreateClient();
             _spotifyHttpClient.BaseAddress = new Uri(_configuration["ThirdParty:Spotify:SpotifyApi"]);
             _accountsHttpClient = httpClientFactory.CreateClient();
@@ -36,7 +41,7 @@ namespace Presentation.API.Services
             var token = await GetTokenAsync();
             var url = $"{SearchPath}?type=track&q=track:\"{name}\"";
 
-            _spotifyHttpClient.DefaultRequestHeaders.Add("Authorization", token);
+            _spotifyHttpClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", token);
             var response = await _spotifyHttpClient.GetFromJsonAsync<SpotifyTracksResponse>(url);
 
             return response.tracks.items.Select(SpotifyTrackToTrack);
@@ -44,19 +49,25 @@ namespace Presentation.API.Services
 
         private async Task<string> GetTokenAsync()
         {
-            var map = new Dictionary<string, string>
+            string token;
+
+            if (!_cache.TryGetValue(AccessTokenCacheKey, out token))
             {
-                { "grant_type", "client_credentials" },
-                { "client_id", _configuration["ThirdParty:Spotify:ClientId"] },
-                { "client_secret", _configuration["ThirdParty:Spotify:ClientSecret"]}
-            };
+                var map = new Dictionary<string, string>
+                {
+                    { "grant_type", "client_credentials" },
+                    { "client_id", _configuration["ThirdParty:Spotify:ClientId"] },
+                    { "client_secret", _configuration["ThirdParty:Spotify:ClientSecret"]}
+                };
+                var response = await _accountsHttpClient.PostAsync($"{TokenPath}", new FormUrlEncodedContent(map));
+                var content = await response.Content.ReadFromJsonAsync<TokenResponse>();
 
-            var response = await _accountsHttpClient.PostAsync($"{TokenPath}", new FormUrlEncodedContent(map));
-            var content = await response.Content.ReadFromJsonAsync<TokenResponse>();
+                // TODO: the absolute expiration should not be hardcoded.
+                _cache.Set(AccessTokenCacheKey, content.access_token, TimeSpan.FromMinutes(1));
+                token = content.access_token;
+            }
 
-            // TODO: caching.
-
-            return $"Bearer {content.access_token}";
+            return $"Bearer {token}";
         }
 
         private Track SpotifyTrackToTrack(SpotifyTrack spotifyTrack)
