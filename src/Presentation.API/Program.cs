@@ -3,6 +3,11 @@ using Presentation.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
+builder.Services.AddCors();
+
 // Add services to the container.
 builder.Services.AddSingleton<IMusicService, SpotifyService>();
 
@@ -17,6 +22,13 @@ builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
+
+app.UseCors(
+    options => options.WithOrigins("*")
+     .AllowAnyOrigin()
+     .AllowAnyMethod()
+     .AllowAnyHeader()
+);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
