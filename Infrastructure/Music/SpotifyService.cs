@@ -1,27 +1,13 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using Presentation.API.Models;
+﻿using Application.Interfaces;
+using Application.Models;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
+using System.Net.Http.Json;
 
-namespace Presentation.API.Services
+namespace Infrastructure.Music
 {
     public class SpotifyService : IMusicService
     {
-        private record SpotifyTracksResponse(SpotifyTracks tracks);
-        private record SpotifyTracks(IEnumerable<SpotifyTrack> items);
-        private record SpotifyTrack(string id, string name, string preview_url,
-            int duration_ms, SpotifyExternalUrls external_urls, SpotifyAlbumImages album);
-        private record SpotifyExternalUrls(string spotify);
-        private record SpotifyAlbumImages(IEnumerable<SpotifyImage> images);
-        private record SpotifyImage(string url, int height, int width);
-        private record TokenResponse(string access_token, string token_type, int expires_in);
-        private record SpotifyArtistsResponse(SpotifyArtists artists);
-        private record SpotifyArtists(IEnumerable<SpotifyArtist> items);
-        private record SpotifyArtist(string id, string name, int popularity,
-            SpotifyExternalUrls external_urls);
-        private record SpotifyAlbumsResponse(SpotifyAlbums albums);
-        private record SpotifyAlbums(IEnumerable<SpotifyAlbum> items);
-        private record SpotifyAlbum(string id, string name, SpotifyExternalUrls external_urls);
-        private record SpotifyGenresResponse(IEnumerable<string> genres);
-
         private const string SearchPath = "search";
         private const string TokenPath = "token";
         private const string GenresPath = "recommendations/available-genre-seeds";

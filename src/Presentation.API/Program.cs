@@ -1,5 +1,5 @@
 using Presentation.API.Converters;
-using Presentation.API.Services;
+using Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +9,7 @@ builder.Logging.AddConsole();
 builder.Services.AddCors();
 
 // Add services to the container.
-builder.Services.AddSingleton<IMusicService, SpotifyService>();
+builder.Services.AddInfrastructureServices();
 
 builder.Services.AddControllers().AddJsonOptions(opts =>
 {

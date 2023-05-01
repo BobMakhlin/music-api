@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Presentation.API.Models;
-using Presentation.API.Services;
+﻿using Application.Interfaces;
+using Application.Models;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Presentation.API.Controllers
 {

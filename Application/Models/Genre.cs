@@ -1,4 +1,4 @@
-﻿namespace Presentation.API.Models
+﻿namespace Application.Models
 {
     public record Genre(string Name);
 }

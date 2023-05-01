@@ -1,6 +1,6 @@
-﻿using Presentation.API.Models;
+﻿using Application.Models;
 
-namespace Presentation.API.Services
+namespace Application.Interfaces
 {
     public interface IMusicService
     {
