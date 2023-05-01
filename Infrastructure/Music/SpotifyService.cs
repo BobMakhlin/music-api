@@ -2,7 +2,9 @@
 using Application.Models;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Net.Http.Json;
+using System.Text;
 
 namespace Infrastructure.Music
 {
@@ -19,23 +21,27 @@ namespace Infrastructure.Music
         private readonly HttpClient _spotifyHttpClient;
         private readonly HttpClient _accountsHttpClient;
         private readonly IMemoryCache _cache;
+        private readonly ILogger<SpotifyService> _logger;
 
         public SpotifyService(IConfiguration configuration,
             IHttpClientFactory httpClientFactory,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            ILogger<SpotifyService> logger)
         {
             _configuration = configuration;
             _cache = cache;
+            _logger = logger;
             _spotifyHttpClient = httpClientFactory.CreateClient();
             _spotifyHttpClient.BaseAddress = new Uri(_configuration["ThirdParty:Spotify:SpotifyApi"]);
             _accountsHttpClient = httpClientFactory.CreateClient();
             _accountsHttpClient.BaseAddress = new Uri(_configuration["ThirdParty:Spotify:AccountsApi"]);
         }
 
-        public async Task<IEnumerable<Track>> FindTracksAsync(string name)
+        public async Task<IEnumerable<Track>> FindTracksAsync(FilterTracksQuery query)
         {
             var token = await GetTokenAsync();
-            var url = $"{SearchPath}?type=track&q=track:\"{name}\"";
+            var url = $"{SearchPath}?type=track&q={BuildSearchTracksQuery(query)}";
+            _logger.LogDebug($"Sending request to Spotify, URL: {url}");
 
             _spotifyHttpClient.DefaultRequestHeaders.TryAddWithoutValidation("Authorization", token);
             var response = await _spotifyHttpClient.GetFromJsonAsync<SpotifyTracksResponse>(url);
@@ -126,6 +132,29 @@ namespace Infrastructure.Music
         private Genre SpotifyGenreToGenre(string spotifyGenre)
         {
             return new Genre(spotifyGenre);
+        }
+        private string BuildSearchTracksQuery(FilterTracksQuery query)
+        {
+            var builder = new StringBuilder();
+
+            if (query.Name != null)
+            {
+                builder.Append($"track:\"{query.Name}\" ");
+            }
+            if (query.Album != null)
+            {
+                builder.Append($"album:\"{query.Album}\" ");
+            }
+            if (query.Artist != null)
+            {
+                builder.Append($"artist:\"{query.Artist}\" ");
+            }
+            if (query.Genre != null)
+            {
+                builder.Append($"genre:\"{query.Genre}\" ");
+            }
+
+            return builder.ToString();
         }
     }
 }
