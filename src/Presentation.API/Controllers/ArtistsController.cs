@@ -6,19 +6,19 @@ namespace Presentation.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class TracksController : ControllerBase
+    public class ArtistsController : ControllerBase
     {
         IMusicService _musicService;
 
-        public TracksController(IMusicService musicService)
+        public ArtistsController(IMusicService musicService)
         {
             _musicService = musicService;
         }
 
         [HttpGet]
-        public Task<IEnumerable<Track>> GetTracksAsync([FromQuery] FilterTracksQuery query)
+        public Task<IEnumerable<Artist>> GetArtistsAsync([FromQuery] string name)
         {
-            return _musicService.FindTracksAsync(query);
+            return _musicService.FindArtistsAsync(name);
         }
     }
 }
