@@ -16,6 +16,7 @@ namespace Infrastructure.Music
         private const int Small = 64;
         private const string AccessTokenCacheKey = "spotifyAccessToken";
         private const int AccessTokenCorrelationMinutes = 5;
+        private const int YearFromDefault = 1900;
 
         private readonly IConfiguration _configuration;
         private readonly HttpClient _spotifyHttpClient;
@@ -153,8 +154,24 @@ namespace Infrastructure.Music
             {
                 builder.Append($"genre:\"{query.Genre}\" ");
             }
+            if (query.YearFrom.HasValue || query.YearTo.HasValue)
+            {
+                builder.Append(BuildYearFilterCriteria(query));
+            }
 
             return builder.ToString();
+        }
+        private string BuildYearFilterCriteria(FilterTracksQuery query)
+        {
+            if (query.YearFrom == query.YearTo)
+            {
+                return $"year:{query.YearFrom}";
+            }
+
+            var yearFrom = query.YearFrom.HasValue ? query.YearFrom.Value : YearFromDefault;
+            var yearTo = query.YearTo.HasValue ? query.YearTo.Value : DateTime.Now.Year;
+
+            return $"year:{yearFrom}-{yearTo}";
         }
     }
 }
